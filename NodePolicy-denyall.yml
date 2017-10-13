@@ -1,0 +1,8 @@
+---
+# Deny all incoming traffic to all pods in the namespace by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  podSelector:

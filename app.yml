@@ -1,0 +1,57 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+    environment: test
+    project: teststuff
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: nginx-lb
+  annotations:
+    #Which ssl cert ARN to use
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:eu-central-1:484535289196:certificate/0062feb9-983c-4c7b-9d0e-58fbd3bc7eaf"
+    #This allows mixed content
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    #Load balancer policy "(https|http|ssl|tcp)"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+spec:
+  type: LoadBalancer
+  #This must match the name of the replication controller for the service
+  selector:
+    #This is how the load balancer knows to route.
+    app: nginx
+  ports:
+    - port: 443
+      protocol: "TCP"
+      #This is the port exposed in the container
+      targetPort: 80
+      #This ends up bound to whatever minion has been elected to run the service.
+      name: https
+    - port: 80
+      protocol: "TCP"
+      #This is the port exposed in the container
+      name: http
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: nginx-allow-web
+spec:
+  podSelector:
+    matchLabels:
+      name: nginx
+  ingress:
+  - ports:
+    - port: 80
+    from: []
